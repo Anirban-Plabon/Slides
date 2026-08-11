@@ -1,0 +1,10 @@
+# PowerPoint presentations and temporary files
+*.pptx
+*.ppt
+~$*.pptx
+~$*.ppt
+
+# OS and Editor generated files
+.DS_Store
+Thumbs.db
+*.html

@@ -1,0 +1,7 @@
+flowchart LR
+    IN("Input Feature Map") --> SQ("Squeeze<br/>Global Avg Pool")
+    SQ --> EX("Excite<br/>FC → ReLU → FC → Sigmoid")
+    EX --> W("Channel Weights")
+    IN --> MUL(("⊙"))
+    W --> MUL
+    MUL --> OUT("Recalibrated Features")

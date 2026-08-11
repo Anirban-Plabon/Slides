@@ -1,0 +1,34 @@
+flowchart TD
+
+    IN("Input") --> E0
+
+    subgraph ENC["Encoder"]
+        E0("Conv Block₀")
+        E1("MaxPool3D → Conv Block₁")
+        E2("MaxPool3D → Conv Block₂")
+        E3("MaxPool3D → Conv Block₃")
+
+        E0 --> E1 --> E2 --> E3
+    end
+
+    subgraph BOT["Bottleneck"]
+        BN("Conv Block")
+    end
+
+    subgraph DEC["Decoder"]
+        D3("Upsample ⊕ Skip₃ → Conv Block")
+        D2("Upsample ⊕ Skip₂ → Conv Block")
+        D1("Upsample ⊕ Skip₁ → Conv Block")
+        D0("Upsample ⊕ Skip₀ → Conv Block")
+        HEAD("Conv3D 1×1×1")
+
+        D3 --> D2 --> D1 --> D0 --> HEAD
+    end
+
+    E3 --> BN --> D3
+    HEAD --> OUT("Output")
+
+    E0 -. "skip₀" .-> D0
+    E1 -. "skip₁" .-> D1
+    E2 -. "skip₂" .-> D2
+    E3 -. "skip₃" .-> D3

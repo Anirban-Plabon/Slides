@@ -1,0 +1,16 @@
+flowchart TD
+    IN("Input Volume: 4 × 128 × 128 × 64") --> E0("GraphSE-ResBlock₀ (4 → f₀)")
+    E0 --> E1("MaxPool3D → GraphSE-ResBlock₁ (f₀ → f₁)")
+    E1 --> E2("MaxPool3D → GraphSE-ResBlock₂ (f₁ → f₂)")
+    E2 --> E3("MaxPool3D → GraphSE-ResBlock₃ (f₂ → f₃)")
+    E3 --> BN("Bottleneck GraphSE-ResBlock (f₃ → 2f₃)")
+    BN --> D3("Upsample ⊕ Skip₃ → GraphSE-ResBlock (3f₃ → f₃)")
+    D3 --> D2("Upsample ⊕ Skip₂ → GraphSE-ResBlock (2f₂ → f₂)")
+    D2 --> D1("Upsample ⊕ Skip₁ → GraphSE-ResBlock (2f₁ → f₁)")
+    D1 --> D0("Upsample ⊕ Skip₀ → GraphSE-ResBlock (2f₀ → f₀)")
+    D0 --> HEAD("Conv3D 1×1×1 (f₀ → 3)") --> OUT("Output: 3 × 128 × 128 × 64 (TC, WT, ET)")
+
+    E0 -. "skip₀" .-> D0
+    E1 -. "skip₁" .-> D1
+    E2 -. "skip₂" .-> D2
+    E3 -. "skip₃" .-> D3

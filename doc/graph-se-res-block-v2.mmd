@@ -1,0 +1,37 @@
+flowchart TD
+    X("X (Cin)") --> C1("Conv3D 3×3×3 + BN + ReLU")
+    C1 --> C2("Conv3D 3×3×3 + BN")
+    C2 --> H("H")
+
+    H --> Pool("Grid AvgPool<br/>V ← pool(H), stride s")
+
+    Pool --> Src("Source Projection<br/>WₛV")
+    Pool --> Dst("Destination Projection<br/>W_dV")
+    Pool --> Val("Value Projection<br/>W_vV")
+
+    Src --> Attn("GATv2-style Attention<br/>eᵢⱼ = aᵀ LeakyReLU(WₛVᵢ + W_dVⱼ)")
+    Dst --> Attn
+
+    Attn --> Softmax("Destination-wise Softmax<br/>αᵢⱼ = softmaxⱼ(eᵢⱼ)")
+    Softmax --> Agg("Weighted Aggregation<br/>Σ αᵢⱼ W_vVᵢ")
+    Val --> Agg
+
+    Agg --> GOut("Graph Output Projection<br/>Wₒ")
+    GOut --> GAdd(("+"))
+    Pool --> GAdd
+
+    GAdd --> VPrime("V' = V + WₒΣαᵢⱼW_vVᵢ")
+
+    VPrime --> Excite("Linear + Sigmoid<br/>g = 2σ(Linear(V'))")
+    Excite --> Interp("Trilinear Interpolation<br/>g → H resolution")
+
+    H --> Mult(("⊙"))
+    Interp --> Mult
+
+    Mult --> Add(("＋"))
+
+    X --> Shortcut("Shortcut 𝒫(X)<br/>Identity or 1×1×1 Conv + BN")
+    Shortcut --> Add
+
+    Add --> ReLU2("ReLU")
+    ReLU2 --> Y("Y (Cout)")
