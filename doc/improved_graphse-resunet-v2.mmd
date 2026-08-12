@@ -1,0 +1,46 @@
+flowchart TD
+    X("X [B, Cin, D, H, W]") --> N1("GroupNorm + ReLU")
+    N1 --> C1("Conv3D 3x3x3, stride sd<br/>[B, Cout, D', H', W']")
+    C1 --> N2("GroupNorm + ReLU")
+    N2 --> C2("Conv3D 3x3x3")
+    C2 --> Hn("H  [B, Cout, D', H', W']")
+
+    Hn --> Pool("AdaptiveAvgPool3d(g,g,g)<br/>FIXED grid, N = g^3 tokens<br/>resolution-independent cost")
+    Pool --> Flat("flatten to [B, N, Cout]")
+    Flat --> PE("+ learned 3D positional embedding")
+    PE --> LN("LayerNorm  (pre-norm)")
+
+    LN --> Q("W_d  destination / query")
+    LN --> K("W_s  source / key")
+    LN --> Vv("W_v  value")
+
+    Q --> Sc("Scoring<br/>GATv2: e = a.T LeakyReLU(K_i + Q_j)<br/>or dot-product: QK.T / sqrt(dh)<br/>+ relative position bias b(dz,dy,dx)")
+    K --> Sc
+    Sc --> SM("softmax over SOURCE index i<br/>alpha_ij = softmax_i(e_ij)   <-- FIX")
+    SM --> DrpA("Attention dropout 0.1")
+    DrpA --> Agg("sum_i alpha_ij * V_i<br/>multi-head, h = 4")
+    Vv --> Agg
+
+    Agg --> Wo("W_o output projection")
+    Wo --> LS("LayerScale gamma, init 1e-4")
+    LS --> GAdd(("+"))
+    Flat --> GAdd
+    GAdd --> Vp("V' = V + gamma * MHA(LN(V))")
+
+    Vp --> FFN("LayerNorm + MLP 2x + residual (optional)")
+    FFN --> Ex("Linear -> Cout channels<br/>ZERO-INIT weight and bias<br/>g = 2 * sigmoid(.)  in (0,2), init = 1.0")
+    Ex --> Rs("reshape to [B, Cout, g, g, g]")
+    Rs --> Up("F.interpolate(size=H.shape[2:],<br/>mode=trilinear, align_corners=False)")
+
+    Hn --> Mul(("multiply"))
+    Up --> Mul
+
+    X --> Sh("Shortcut P(X)<br/>Identity, or 1x1x1 Conv stride sd + GroupNorm")
+    Mul --> Add(("+"))
+    Sh --> Add
+    Add --> Y("Y [B, Cout, D', H', W']  (pre-act: no trailing ReLU)")
+
+    style SM fill:#ffd9d9,stroke:#c00
+    style PE fill:#ffd9d9,stroke:#c00
+    style Pool fill:#ffd9d9,stroke:#c00
+    style Up fill:#ffd9d9,stroke:#c00
